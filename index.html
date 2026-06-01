@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Static Paint Studio</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">◩</span>
+        <div>
+          <h1>Static Paint Studio</h1>
+          <p>HTML / CSS / Vanilla JS only. GitHub Pages ready.</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="undoBtn" class="btn ghost" type="button" title="Ctrl+Z">Undo</button>
+        <button id="redoBtn" class="btn ghost" type="button" title="Ctrl+Y / Ctrl+Shift+Z">Redo</button>
+        <button id="manualSaveBtn" class="btn ghost" type="button">セーブポイント</button>
+        <select id="exportFormat" class="select compact" aria-label="出力形式">
+          <option value="png">PNG</option>
+          <option value="svg">SVG</option>
+        </select>
+        <button id="exportBtn" class="btn primary" type="button">出力</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar left-panel">
+        <section class="panel">
+          <h2>画像サイズ</h2>
+          <div class="two-cols">
+            <label>Width
+              <input id="canvasWidth" class="input" type="number" min="1" max="8192" value="1024">
+            </label>
+            <label>Height
+              <input id="canvasHeight" class="input" type="number" min="1" max="8192" value="768">
+            </label>
+          </div>
+          <button id="resizeCanvasBtn" class="btn full" type="button">サイズを適用</button>
+          <div class="file-actions">
+            <input id="openImageInput" type="file" accept="image/*" hidden>
+            <button id="openImageBtn" class="btn ghost full" type="button">画像を新規編集</button>
+            <input id="stickerInput" type="file" accept="image/*" multiple hidden>
+            <button id="addStickerBtn" class="btn ghost full" type="button">画像を貼り付け</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>ツール</h2>
+          <div class="tool-grid" role="group" aria-label="描画ツール">
+            <button class="tool-btn active" type="button" data-tool="pen">ペン</button>
+            <button class="tool-btn" type="button" data-tool="eraser">透過ペン</button>
+            <button class="tool-btn" type="button" data-tool="mosaic">モザイク</button>
+            <button class="tool-btn" type="button" data-tool="fill">塗りつぶし</button>
+            <button class="tool-btn" type="button" data-tool="picker">キャンバス<br>スポイト</button>
+          </div>
+          <label class="switch-row">
+            <span>選択機能</span>
+            <input id="selectMode" type="checkbox">
+            <span class="switch-label">ON</span>
+          </label>
+          <label>ペン半径 <span id="brushRadiusValue" class="value-chip">16</span>
+            <input id="brushRadius" type="range" min="1" max="96" value="16">
+          </label>
+          <label>モザイク粒度 <span id="mosaicSizeValue" class="value-chip">14</span>
+            <input id="mosaicSize" type="range" min="2" max="64" value="14">
+          </label>
+          <label>同一色判定 range <span id="toleranceValue" class="value-chip">24</span>
+            <input id="tolerance" type="range" min="0" max="255" value="24">
+          </label>
+          <label>塗りつぶし範囲
+            <select id="fillScope" class="select">
+              <option value="contiguous">クリック位置から連結領域</option>
+              <option value="global">全キャンバスの同系色</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="panel">
+          <h2>パレット</h2>
+          <div class="current-color-row">
+            <div id="currentSwatch" class="swatch current" title="現在の色"></div>
+            <div class="color-fields">
+              <label>色
+                <input id="colorInput" class="color-input" type="color" value="#007aff">
+              </label>
+              <label>Alpha <span id="alphaValue" class="value-chip">100%</span>
+                <input id="alphaInput" type="range" min="0" max="100" value="100">
+              </label>
+            </div>
+          </div>
+          <div id="palette" class="palette" aria-label="色パレット"></div>
+          <div class="two-cols">
+            <button id="addColorBtn" class="btn ghost" type="button">追加</button>
+            <button id="clearCustomPaletteBtn" class="btn ghost" type="button">初期化</button>
+          </div>
+          <button id="eyeDropperBtn" class="btn full" type="button">全画面スポイト</button>
+        </section>
+      </aside>
+
+      <section class="stage-panel">
+        <div class="stage-toolbar">
+          <div class="hint">画像ファイルをキャンバスへドロップ、またはクリップボードから貼り付け可能。</div>
+          <div id="zoomReadout" class="value-chip">100%</div>
+        </div>
+        <div id="canvasScroller" class="canvas-scroller">
+          <div id="canvasShell" class="canvas-shell">
+            <canvas id="paintCanvas" width="1024" height="768" aria-label="ペイントキャンバス"></canvas>
+            <div id="dropOverlay" class="drop-overlay">ここに画像をドロップして貼り付け</div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="sidebar right-panel">
+        <section class="panel">
+          <h2>フィルター</h2>
+          <label>種類
+            <select id="filterType" class="select">
+              <option value="">選択してください</option>
+              <option value="brightness">明るさ</option>
+              <option value="contrast">コントラスト</option>
+              <option value="saturation">彩度</option>
+              <option value="ambiance">アンビアンス</option>
+              <option value="highlights">ハイライト</option>
+              <option value="shadows">シャドウ</option>
+              <option value="temperature">色温度</option>
+              <option value="structure">ストラクチャ</option>
+              <option value="sharp">シャープ</option>
+            </select>
+          </label>
+          <div id="filterControls" class="filter-controls" hidden>
+            <label><span id="filterLabel">値</span> <span id="filterValueReadout" class="value-chip">0</span>
+              <input id="filterValue" type="range" min="-100" max="100" value="0">
+            </label>
+            <div class="two-cols">
+              <button id="filterApplyBtn" class="btn primary" type="button">Save</button>
+              <button id="filterCancelBtn" class="btn ghost" type="button">Cancel</button>
+            </div>
+          </div>
+          <p class="microcopy">フィルター保存時は、貼り付け画像も含めて一枚に統合されます。まあ、レイヤー地獄を静的ページに持ち込むのは罰ゲームなので。</p>
+        </section>
+
+        <section class="panel">
+          <h2>貼り付け画像</h2>
+          <div class="sticker-actions">
+            <button id="deleteStickerBtn" class="btn ghost full" type="button">選択画像を削除</button>
+            <div class="two-cols">
+              <button id="bringForwardBtn" class="btn ghost" type="button">前面へ</button>
+              <button id="sendBackwardBtn" class="btn ghost" type="button">背面へ</button>
+            </div>
+            <button id="flattenBtn" class="btn full" type="button">貼り付け画像を固定化</button>
+          </div>
+          <div id="stickerList" class="sticker-list"></div>
+        </section>
+
+        <section class="panel">
+          <h2>状態</h2>
+          <div id="status" class="status">準備完了</div>
+          <div id="historyInfo" class="history-info">History: 0 / 0</div>
+          <details>
+            <summary>ショートカット</summary>
+            <ul class="shortcut-list">
+              <li>Ctrl+Z: Undo</li>
+              <li>Ctrl+Y / Ctrl+Shift+Z: Redo</li>
+              <li>Delete: 選択画像を削除</li>
+              <li>Ctrl+V: 画像貼り付け</li>
+            </ul>
+          </details>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
